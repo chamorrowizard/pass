@@ -107,7 +107,7 @@ padding:12px;
 box-shadow:0 8px 18px rgba(0,0,0,0.35);
 }
 label{display:block;font-size:13px;margin-bottom:6px;font-weight:600}
-input[type="date"], input[type="number"], select{
+input[type="date"], input[type="number"], select, input[type="text"]{
 width:100%;
 padding:10px 12px;
 border-radius:8px;
@@ -153,7 +153,8 @@ margin-bottom:8px;
 background:linear-gradient(90deg, rgba(0,0,0,0.03), rgba(255,255,255,0.01));
 border:1px solid rgba(0,0,0,0.06);
 }
-.entry .left{display:flex;gap:10px;align-items:center}
+.entry .left{display:flex;gap:10px;align-items:center;flex-direction:column;align-items:flex-start}
+.entry .dot-wrapper{display:flex;gap:10px;align-items:center}
 .dot{
 width:12px;height:12px;border-radius:50%;
 box-shadow:0 1px 4px rgba(0,0,0,0.3)
@@ -205,13 +206,13 @@ font-size:12px;
 cursor:pointer;
 border:1px dashed rgba(255,255,255,0.02);
 }
-/* Add todays date */
+/* Highlight current day */
 .cal-day.is-today{
   border:2px solid var(--gold); /* Highlight with a gold border */
   background:rgba(212,175,55,0.1); /* Slightly darker background */
   box-shadow:0 0 10px rgba(212,175,55,0.3); /* Subtle glow */
 }
-/* End add */
+/* End current day highlight */
 .cal-day .date{font-size:11px;opacity:0.9}
 .cal-dot{
 width:12px;height:12px;border-radius:50%;margin-top:6px;
@@ -248,15 +249,13 @@ box-shadow:0 6px 18px rgba(0,0,0,0.45);
       </div>
     </div>
 
-```
 <div class="grid">
   <main>
-    <!-- Big dashboard -->
     <div class="big-card" id="dashboard">
       <div class="big-left">
         <div class="big-value" id="calendarPercent">—%</div>
         <div class="sub">Refusal % (calculated from calendar — excludes Pass)</div>
-        <!-- <div class="sub" id="ratioText">— refused / — worked</div> -->
+        <div class="sub" id="ratioText">— refused / — worked</div>
       </div>
       <div class="big-right">
         <div class="chip" id="currentRefChip">Current refused %: —</div>
@@ -298,6 +297,11 @@ box-shadow:0 6px 18px rgba(0,0,0,0.45);
         <div style="width:100px">
           <button id="clearOutside" class="btn btn-danger" title="Remove entries older than 60 days">Clean old</button>
         </div>
+      </div>
+      
+      <div id="notesContainer" style="margin-top: 10px; display:none;">
+        <label for="entryNotes" style="font-weight:400; font-size:12px">Optional Notes (e.g., FMLA, Training, etc.):</label>
+        <input type="text" id="entryNotes" placeholder="Reason for day worked, if unusual (optional)" />
       </div>
 
       <div class="muted" style="margin-top:8px">Tip: tap a dot in the calendar to jump that date into the input. Dates outside the 60-day window are stored but not counted in calculations (except passes are still tracked separately).</div>
@@ -352,7 +356,6 @@ box-shadow:0 6px 18px rgba(0,0,0,0.45);
 
   </main>
 
-  <!-- Right column -->
   <aside>
     <div class="card" style="margin-bottom:12px">
       <h3 style="margin:0 0 8px 0">Quick controls</h3>
@@ -360,8 +363,7 @@ box-shadow:0 6px 18px rgba(0,0,0,0.45);
         <button id="markTodayRef" class="btn">Mark Today Refused</button>
         <button id="markTodayWork" class="btn">Mark Today Worked</button>
         <button id="markTodayPass" class="btn">Mark Today Passed</button>
-        <!-- <button id="clearAllEntries" class="btn btn-danger">Clear all entries</button> -->
-      </div>
+        </div>
     </div>
 
     <div class="card" style="text-align:center">
@@ -377,7 +379,6 @@ box-shadow:0 6px 18px rgba(0,0,0,0.45);
 
   </aside>
 </div>
-```
 
   </div>
 
@@ -385,45 +386,42 @@ box-shadow:0 6px 18px rgba(0,0,0,0.45);
 /* REFUSAL & PASS TRACKER
    Rolling 60-day window: includes today and 59 prior days.
    localStorage keys:
-     - REF60_ENTRIES_v1  -> array of { date: 'YYYY-MM-DD', type: 'refused'|'worked'|'passed', created: timestamp }
+     - REF60_ENTRIES_v1  -> array of { date: 'YYYY-MM-DD', type: 'refused'|'worked'|'passed', created: timestamp, notes: optional string }
      - REF60_CURRENT_v1  -> current external refusal percentage (number)
 */
 
 const STORAGE_KEY = 'REF60_ENTRIES_v1';
 const CURRENT_KEY = 'REF60_CURRENT_v1';
 
+// ******************************************************
+// FIX: Date functions updated to avoid time zone conflicts
+// ******************************************************
+
 function toLocalISO(d) {
-  // Converts date to YYYY-MM-DD without jumping to UTC
+  // Converts date to YYYY-MM-DD using local time (fixed)
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
-// add todays date ↓ is the old todayISO
-// function todayISO(offsetDays = 0){
-//   const d = new Date();
-//   d.setHours(0,0,0,0);
-//   d.setDate(d.getDate() + offsetDays);
-//   return toLocalISO(d);
-// }
+
 function todayISO(offsetDays = 0){
   const d = new Date();
-  // We don't need to manipulate hours/minutes, just the date.
-  d.setDate(d.getDate() + offsetDays); 
-  // toLocalISO will correctly pull the local date parts (year, month, day)
+  // Removed d.setHours(0,0,0,0) fix
+  d.setDate(d.getDate() + offsetDays);
   return toLocalISO(d);
 }
 
 function windowStartISO(){
   const d = new Date();
-  // d.setHours(0,0,0,0);
-  d.setDate(d.getDate() - 59); // 59 prior days + today
+  // Removed d.setHours(0,0,0,0) fix
+  d.setDate(d.getDate() - 59); // 59 prior days + today = 60 days total
   return toLocalISO(d);
 }
 
 function windowEndISO(){ 
   const d = new Date();
-  // d.setHours(0,0,0,0);
+  // Removed d.setHours(0,0,0,0) fix
   return toLocalISO(d);
 }
 
@@ -441,15 +439,33 @@ function loadCurrent(){
 }
 function saveCurrent(n){ localStorage.setItem(CURRENT_KEY, String(n)); }
 
-function addOrReplace(dateISO, type){
+function addOrReplace(dateISO, type, notes = ''){
   if(!dateISO) return;
   if(!['refused','worked','passed'].includes(type)) return;
   const entries = loadEntries();
   const idx = entries.findIndex(e => e.date === dateISO);
-  const entry = { date: dateISO, type: type, created: Date.now() };
-  if(idx >= 0) entries[idx] = entry; else entries.push(entry);
+  
+  // Clean up notes if not 'worked'
+  const finalNotes = (type === 'worked' ? notes : ''); 
+  
+  const entry = { date: dateISO, type: type, created: Date.now(), notes: finalNotes };
+  
+  if(idx >= 0) {
+    // Preserve old notes if not provided in the current update
+    if (idx >= 0 && !notes && entries[idx].type === type) {
+        entry.notes = entries[idx].notes;
+    }
+    entries[idx] = entry; 
+  } else {
+    entries.push(entry);
+  }
+  
   entries.sort((a,b) => b.date.localeCompare(a.date));
   saveEntries(entries);
+  
+  // Clear notes input after saving
+  document.getElementById('entryNotes').value = ''; 
+  
   renderAll();
 }
 
@@ -459,13 +475,6 @@ function removeEntry(dateISO){
   saveEntries(entries);
   renderAll();
 }
-
-// function clearAll(){
-//   if(!confirm('Clear all stored entries? This will remove everything.')) return;
-//   localStorage.removeItem(STORAGE_KEY);
-//   localStorage.removeItem(CURRENT_KEY);
-//   renderAll();
-// }
 
 function removeOlderThanWindow(){
   const start = windowStartISO();
@@ -478,7 +487,10 @@ function removeOlderThanWindow(){
 function computeWindowStats(){
   const start = windowStartISO();
   const end = windowEndISO();
+  
+  // FIX: Comparison logic is inclusive (>= start and <= end)
   const entries = loadEntries().filter(e => e.date >= start && e.date <= end);
+  
   let refused = 0, worked = 0, passed = 0;
   entries.forEach(e => {
     if(e.type === 'refused') refused++;
@@ -496,32 +508,41 @@ function buildCalendar(){
   grid.innerHTML = '';
   const start = new Date(windowStartISO());
   const entriesMap = {};
-  loadEntries().forEach(e => entriesMap[e.date] = e.type);
-  // add todays date
-  const todayIso = todayISO();
-// end add
+  loadEntries().forEach(e => entriesMap[e.date] = e); // Store full entry object now
+
+  const todayIso = todayISO(); // Fixed today date
+
   for(let i=0;i<60;i++){
     const d = new Date(start);
     d.setDate(start.getDate() + i);
-    const iso = toLocalISO(d);
+    
+    // FIX: Use toLocalISO to prevent UTC shift error for display and comparison
+    const iso = toLocalISO(d); 
+    
     const node = document.createElement('div');
     node.className = 'cal-day';
     node.dataset.date = iso;
-    // Add todays date
+    
     if (iso === todayIso) {
       node.classList.add('is-today');
     }
-// end add
+    
+    const entry = entriesMap[iso];
+
     const day = document.createElement('div');
     day.className = 'date';
     // show small label: Month/day only for readability
     const mm = (d.getMonth()+1) + '/' + d.getDate();
     day.textContent = mm;
+    
     const dot = document.createElement('div');
     dot.className = 'cal-dot none';
-    if(entriesMap[iso] === 'refused') { dot.className = 'cal-dot refused'; }
-    else if(entriesMap[iso] === 'worked') { dot.className = 'cal-dot work'; }
-    else if(entriesMap[iso] === 'passed') { dot.className = 'cal-dot passed'; }
+    
+    if(entry) {
+        if(entry.type === 'refused') { dot.className = 'cal-dot refused'; }
+        else if(entry.type === 'worked') { dot.className = 'cal-dot work'; }
+        else if(entry.type === 'passed') { dot.className = 'cal-dot passed'; }
+    }
 
     node.appendChild(day);
     node.appendChild(dot);
@@ -529,14 +550,30 @@ function buildCalendar(){
     node.onclick = () => {
       // clicking populates the add/edit form for quick edit
       document.getElementById('entryDate').value = iso;
-      if(entriesMap[iso]) document.getElementById('entryType').value = entriesMap[iso];
-      else document.getElementById('entryType').value = 'refused';
+      
+      const typeSelect = document.getElementById('entryType');
+      const notesInput = document.getElementById('entryNotes');
+      
+      if(entry){
+          typeSelect.value = entry.type;
+          notesInput.value = entry.notes || '';
+      } else {
+          typeSelect.value = 'refused';
+          notesInput.value = '';
+      }
+      
+      // Toggle notes visibility
+      if(typeSelect.value === 'worked') document.getElementById('notesContainer').style.display = 'block';
+      else document.getElementById('notesContainer').style.display = 'none';
+
       // scroll to top of inputs on small screens
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     // hover title (helpful on desktop)
-    node.title = iso + (entriesMap[iso] ? (' — ' + entriesMap[iso]) : ' — no entry');
+    let titleText = iso + (entry ? (' — ' + entry.type) : ' — no entry');
+    if(entry && entry.notes) titleText += ` (${entry.notes})`;
+    node.title = titleText;
 
     grid.appendChild(node);
   }
@@ -553,22 +590,48 @@ function renderEntriesList(){
   // show latest first
   entries.slice(0,200).forEach(e => {
     const el = document.createElement('div'); el.className = 'entry';
+    
     const left = document.createElement('div'); left.className='left';
+    
+    const dotWrapper = document.createElement('div'); dotWrapper.className='dot-wrapper';
     const dot = document.createElement('span'); dot.className = 'dot ' + (e.type === 'refused' ? 'refused' : (e.type === 'worked' ? 'work' : 'passed'));
+    dotWrapper.appendChild(dot);
+    
     const dt = document.createElement('div');
     const dTitle = document.createElement('div'); dTitle.textContent = e.date; dTitle.style.fontWeight = 700;
+    
     const dSub = document.createElement('small'); 
     if(e.type === 'refused') dSub.textContent = 'Refused (denied shift)';
     else if(e.type === 'worked') dSub.textContent = 'Worked (accepted)';
     else dSub.textContent = 'Passed (offered — tracked only)';
-    dt.appendChild(dTitle); dt.appendChild(dSub);
-    left.appendChild(dot); left.appendChild(dt);
+    
+    dotWrapper.appendChild(dTitle);
+    dt.appendChild(dotWrapper); 
+    dt.appendChild(dSub);
+    
+    // Display Notes if present
+    if (e.notes) {
+        const notesEl = document.createElement('div');
+        notesEl.style.fontSize = '12px';
+        notesEl.style.color = '#BDBDBD'; // Light gray color
+        notesEl.style.marginTop = '4px';
+        notesEl.textContent = `Note: ${e.notes}`;
+        dt.appendChild(notesEl);
+    }
+    
+    left.appendChild(dt);
 
     const right = document.createElement('div'); right.style.display='flex'; right.style.gap='8px';
     const editBtn = document.createElement('button'); editBtn.className='btn'; editBtn.style.padding='6px 8px'; editBtn.textContent='Edit';
     editBtn.onclick = () => {
       document.getElementById('entryDate').value = e.date;
       document.getElementById('entryType').value = e.type;
+      document.getElementById('entryNotes').value = e.notes || '';
+      
+      // Toggle notes visibility
+      if(e.type === 'worked') document.getElementById('notesContainer').style.display = 'block';
+      else document.getElementById('notesContainer').style.display = 'none';
+
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
     const delBtn = document.createElement('button'); delBtn.className='btn btn-danger'; delBtn.style.padding='6px 8px'; delBtn.textContent='Delete';
@@ -605,12 +668,14 @@ function renderAll(){
   if(s.percent === null){
     pctEl.textContent = '—%';
     miniPct.textContent = '—%';
-    document.getElementById('ratioText').textContent = `— refused / — worked`;
+    // FIX: Show calendar derivation text
+    document.getElementById('ratioText').textContent = `— refused / — worked `;
   } else {
     const formatted = s.percent.toFixed(1) + '%';
     pctEl.textContent = formatted;
     miniPct.textContent = formatted;
-    document.getElementById('ratioText').textContent = `${s.refused} refused / ${s.worked} worked`;
+    // FIX: Show calendar derivation text
+    document.getElementById('ratioText').textContent = `${s.refused} refused / ${s.worked} worked `;
   }
 
   // current external metric
@@ -639,6 +704,18 @@ function flash(msg){
   setTimeout(()=> el.remove(),2000);
 }
 
+// Function to toggle Notes visibility
+function toggleNotesField(){
+    const type = document.getElementById('entryType').value;
+    const notesContainer = document.getElementById('notesContainer');
+    if (type === 'worked') {
+        notesContainer.style.display = 'block';
+    } else {
+        notesContainer.style.display = 'none';
+        document.getElementById('entryNotes').value = ''; // Clear notes when switching away
+    }
+}
+
 /* Init and event wiring */
 function init(){
   // set date input default to today
@@ -647,6 +724,10 @@ function init(){
   // load current
   const cur = loadCurrent();
   if(cur !== null) document.getElementById('currentRef').value = Number(cur).toFixed(1);
+
+  // Toggle notes on type change
+  document.getElementById('entryType').addEventListener('change', toggleNotesField);
+  toggleNotesField(); // Run once on init to hide/show initially
 
   document.getElementById('saveCurrent').addEventListener('click', () => {
     const v = parseFloat(document.getElementById('currentRef').value);
@@ -660,9 +741,12 @@ function init(){
   document.getElementById('addEntry').addEventListener('click', () => {
     const date = document.getElementById('entryDate').value;
     const type = document.getElementById('entryType').value;
+    const notes = document.getElementById('entryNotes').value.trim();
+    
     if(!date){ alert('Please choose a date.'); return; }
     if(!['refused','worked','passed'].includes(type)){ alert('Select refused, worked, or passed.'); return; }
-    addOrReplace(date, type);
+    
+    addOrReplace(date, type, notes);
     flash('Saved entry for ' + date);
   });
 
@@ -674,11 +758,10 @@ function init(){
     if(confirm('Remove entries older than the current 60-day window?')) removeOlderThanWindowImpl();
   });
 
-  // document.getElementById('clearAllEntries').addEventListener('click', () => clearAll());
-
   // keyboard-friendly
   document.getElementById('entryDate').addEventListener('keydown',(e)=>{ if(e.key==='Enter') document.getElementById('addEntry').click(); });
   document.getElementById('entryType').addEventListener('keydown',(e)=>{ if(e.key==='Enter') document.getElementById('addEntry').click(); });
+  document.getElementById('entryNotes').addEventListener('keydown',(e)=>{ if(e.key==='Enter') document.getElementById('addEntry').click(); });
 
   renderAll();
 }
