@@ -205,6 +205,13 @@ font-size:12px;
 cursor:pointer;
 border:1px dashed rgba(255,255,255,0.02);
 }
+/* Add todays date */
+.cal-day.is-today{
+  border:2px solid var(--gold); /* Highlight with a gold border */
+  background:rgba(212,175,55,0.1); /* Slightly darker background */
+  box-shadow:0 0 10px rgba(212,175,55,0.3); /* Subtle glow */
+}
+/* End add */
 .cal-day .date{font-size:11px;opacity:0.9}
 .cal-dot{
 width:12px;height:12px;border-radius:50%;margin-top:6px;
@@ -385,19 +392,41 @@ box-shadow:0 6px 18px rgba(0,0,0,0.45);
 const STORAGE_KEY = 'REF60_ENTRIES_v1';
 const CURRENT_KEY = 'REF60_CURRENT_v1';
 
+function toLocalISO(d) {
+  // Converts date to YYYY-MM-DD without jumping to UTC
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+// add todays date ↓ is the old todayISO
+// function todayISO(offsetDays = 0){
+//   const d = new Date();
+//   d.setHours(0,0,0,0);
+//   d.setDate(d.getDate() + offsetDays);
+//   return toLocalISO(d);
+// }
 function todayISO(offsetDays = 0){
   const d = new Date();
-  d.setHours(0,0,0,0);
-  d.setDate(d.getDate() + offsetDays);
-  return d.toISOString().slice(0,10);
+  // We don't need to manipulate hours/minutes, just the date.
+  d.setDate(d.getDate() + offsetDays); 
+  // toLocalISO will correctly pull the local date parts (year, month, day)
+  return toLocalISO(d);
 }
+
 function windowStartISO(){
   const d = new Date();
-  d.setHours(0,0,0,0);
-  d.setDate(d.getDate() - 59); // 59 prior days + today = 60
-  return d.toISOString().slice(0,10);
+  // d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - 59); // 59 prior days + today
+  return toLocalISO(d);
 }
-function windowEndISO(){ return todayISO(); }
+
+function windowEndISO(){ 
+  const d = new Date();
+  // d.setHours(0,0,0,0);
+  return toLocalISO(d);
+}
+
 
 function loadEntries(){
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
@@ -468,15 +497,21 @@ function buildCalendar(){
   const start = new Date(windowStartISO());
   const entriesMap = {};
   loadEntries().forEach(e => entriesMap[e.date] = e.type);
-
+  // add todays date
+  const todayIso = todayISO();
+// end add
   for(let i=0;i<60;i++){
     const d = new Date(start);
     d.setDate(start.getDate() + i);
-    const iso = d.toISOString().slice(0,10);
+    const iso = toLocalISO(d);
     const node = document.createElement('div');
     node.className = 'cal-day';
     node.dataset.date = iso;
-
+    // Add todays date
+    if (iso === todayIso) {
+      node.classList.add('is-today');
+    }
+// end add
     const day = document.createElement('div');
     day.className = 'date';
     // show small label: Month/day only for readability
