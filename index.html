@@ -1,9 +1,10 @@
 <!doctype html>
+
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Pass Percentage Tracker — 60 Day Rolling</title>
+<title>Refusal & Pass Tracker — Rolling 60 Days</title>
 <style>
   :root{
     --gold:#D4AF37;
@@ -12,318 +13,377 @@
     --red:#d62828;
     --muted:#f5f4f2;
     --glass: rgba(255,255,255,0.06);
+    --pass-gray: #BDBDBD; /* Option C */
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
   }
 
-  /* Mobile-first */
-  body{
-    background: linear-gradient(180deg,var(--black) 0%, #0f0f0f 100%);
-    color:var(--white);
-    margin:0;
-    -webkit-font-smoothing:antialiased;
-    -moz-osx-font-smoothing:grayscale;
-    padding:18px;
-    display:flex;
-    align-items:flex-start;
-    justify-content:center;
-    min-height:100vh;
-  }
+/* Mobile-first */
+html,body{height:100%}
+body{
+background: linear-gradient(180deg,var(--black) 0%, #0f0f0f 100%);
+color:var(--white);
+margin:0;
+-webkit-font-smoothing:antialiased;
+-moz-osx-font-smoothing:grayscale;
+padding:14px;
+display:flex;
+align-items:flex-start;
+justify-content:center;
+min-height:100vh;
+}
 
-  .container{
-    width:100%;
-    max-width:920px;
-  }
+.container{
+width:100%;
+max-width:980px;
+}
 
-  .header{
-    display:flex;
-    gap:12px;
-    align-items:center;
-    margin-bottom:12px;
-  }
-  .logo{
-    background:linear-gradient(135deg,var(--gold),#f3d77a);
-    color:var(--black);
-    padding:10px 14px;
-    border-radius:12px;
-    font-weight:700;
-    box-shadow:0 6px 20px rgba(0,0,0,0.6);
-    letter-spacing:0.6px;
-  }
-  h1{
-    font-size:20px;
-    margin:0;
-    line-height:1;
-  }
-  p.lead{
-    margin:4px 0 0 0;
-    color: #dcd6c9;
-    font-size:13px;
-  }
+.header{
+display:flex;
+gap:12px;
+align-items:center;
+margin-bottom:12px;
+}
+.logo{
+background:linear-gradient(135deg,var(--gold),#f3d77a);
+color:var(--black);
+padding:10px 14px;
+border-radius:12px;
+font-weight:700;
+box-shadow:0 6px 20px rgba(0,0,0,0.6);
+letter-spacing:0.6px;
+}
+h1{
+font-size:20px;
+margin:0;
+line-height:1;
+}
+p.lead{
+margin:4px 0 0 0;
+color: #dcd6c9;
+font-size:13px;
+}
 
-  .grid{
-    display:grid;
-    gap:12px;
-    grid-template-columns: 1fr;
-  }
+.grid{
+display:grid;
+gap:12px;
+grid-template-columns: 1fr;
+}
 
-  /* Large dashboard card */
-  .big-card{
-    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
-    border-radius:14px;
-    padding:16px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-    display:flex;
-    gap:12px;
-    align-items:center;
-    justify-content:space-between;
-    border:1px solid rgba(212,175,55,0.08);
-  }
-  .big-left{
-    flex:1;
-  }
-  .big-value{
-    font-size:34px;
-    font-weight:800;
-    color:var(--gold);
-  }
-  .sub{
-    color:#e9e6df;
-    opacity:0.9;
-    font-size:13px;
-    margin-top:4px;
-  }
-  .big-right{
-    text-align:right;
-    min-width:140px;
-  }
-  .chip{
-    display:inline-block;
-    background: linear-gradient(90deg,#0f0f0f, #151515);
-    padding:6px 10px;
-    border-radius:999px;
-    border:1px solid rgba(212,175,55,0.12);
-    font-weight:700;
-    font-size:13px;
-  }
+.big-card{
+background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+border-radius:14px;
+padding:14px;
+box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+display:flex;
+gap:12px;
+align-items:center;
+justify-content:space-between;
+border:1px solid rgba(212,175,55,0.08);
+}
+.big-left{flex:1}
+.big-value{
+font-size:38px;
+font-weight:900;
+color:var(--red);
+}
+.sub{color:#e9e6df;opacity:0.95;font-size:13px;margin-top:6px}
+.big-right{text-align:right;min-width:150px}
+.chip{
+display:inline-block;
+background: linear-gradient(90deg,#0f0f0f, #151515);
+padding:6px 10px;
+border-radius:999px;
+border:1px solid rgba(212,175,55,0.12);
+font-weight:700;
+font-size:13px;
+}
 
-  /* Inputs area */
-  .card{
-    background:var(--white);
-    color:var(--black);
-    border-radius:12px;
-    padding:12px;
-    box-shadow:0 8px 18px rgba(0,0,0,0.35);
-  }
-  label{display:block;font-size:13px;margin-bottom:6px;font-weight:600}
-  input[type="date"], input[type="number"], select{
-    width:100%;
-    padding:10px 12px;
-    border-radius:8px;
-    border:1px solid #ddd;
-    font-size:14px;
-    box-sizing:border-box;
-  }
-  .row{display:flex;gap:8px;flex-wrap:wrap}
-  .col{flex:1;min-width:120px}
-  button.btn{
-    background:var(--gold);
-    border:none;
-    color:var(--black);
-    padding:10px 12px;
-    border-radius:10px;
-    font-weight:700;
-    cursor:pointer;
-    box-shadow:0 6px 18px rgba(212,175,55,0.12);
-    transition:transform .08s ease;
-  }
-  button.btn:active{transform:translateY(1px)}
-  .btn-danger{
-    background:var(--red);
-    color:var(--white);
-    border:none;
-  }
+/* Inputs area */
+.card{
+background:var(--white);
+color:var(--black);
+border-radius:12px;
+padding:12px;
+box-shadow:0 8px 18px rgba(0,0,0,0.35);
+}
+label{display:block;font-size:13px;margin-bottom:6px;font-weight:600}
+input[type="date"], input[type="number"], select{
+width:100%;
+padding:10px 12px;
+border-radius:8px;
+border:1px solid #ddd;
+font-size:14px;
+box-sizing:border-box;
+}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.col{flex:1;min-width:120px}
+button.btn{
+background:var(--gold);
+border:none;
+color:var(--black);
+padding:10px 12px;
+border-radius:10px;
+font-weight:700;
+cursor:pointer;
+box-shadow:0 6px 18px rgba(212,175,55,0.12);
+transition:transform .08s ease;
+}
+button.btn:active{transform:translateY(1px)}
+.btn-danger{
+background:var(--red);
+color:var(--white);
+border:none;
+}
 
-  /* list */
-  .entries{
-    max-height:280px;
-    overflow:auto;
-    margin-top:8px;
-    padding-right:8px;
-  }
-  .entry{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:8px;
-    padding:10px;
-    border-radius:8px;
-    margin-bottom:8px;
-    background:linear-gradient(90deg, rgba(0,0,0,0.03), rgba(255,255,255,0.01));
-    border:1px solid rgba(0,0,0,0.06);
-  }
-  .entry .left{display:flex;gap:10px;align-items:center}
-  .dot{
-    width:12px;height:12px;border-radius:50%;
-    box-shadow:0 1px 4px rgba(0,0,0,0.3)
-  }
-  .dot.pass{background:var(--red)}
-  .dot.work{background:var(--gold)}
-  .entry small{display:block;color:#bdbdbd;font-size:12px}
+/* entries list */
+.entries{
+max-height:240px;
+overflow:auto;
+margin-top:8px;
+padding-right:8px;
+}
+.entry{
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:8px;
+padding:10px;
+border-radius:8px;
+margin-bottom:8px;
+background:linear-gradient(90deg, rgba(0,0,0,0.03), rgba(255,255,255,0.01));
+border:1px solid rgba(0,0,0,0.06);
+}
+.entry .left{display:flex;gap:10px;align-items:center}
+.dot{
+width:12px;height:12px;border-radius:50%;
+box-shadow:0 1px 4px rgba(0,0,0,0.3)
+}
+.dot.refused{background:var(--red)}
+.dot.work{background:var(--gold)}
+.dot.passed{background:var(--pass-gray)}
+.entry small{display:block;color:#6b6b6b;font-size:12px}
 
-  /* stats row */
-  .stats{
-    display:flex;
-    gap:10px;
-    margin-top:10px;
-    flex-wrap:wrap;
-  }
-  .stat{
-    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));
-    border-radius:10px;padding:12px;flex:1;min-width:120px;
-    border:1px solid rgba(212,175,55,0.06);
-  }
-  .stat h3{margin:0;font-size:20px;color:var(--gold);font-weight:800}
-  .stat p{margin:6px 0 0 0;color:#dad6cc;font-size:13px}
+/* stats row */
+.stats{
+display:flex;
+gap:10px;
+margin-top:10px;
+flex-wrap:wrap;
+}
+.stat{
+background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));
+border-radius:10px;padding:12px;flex:1;min-width:120px;
+border:1px solid rgba(212,175,55,0.06);
+}
+.stat h3{margin:0;font-size:20px;color:var(--gold);font-weight:800}
+.stat p{margin:6px 0 0 0;color:#dad6cc;font-size:13px}
 
-  /* footer small */
-  .muted{font-size:12px;color:#cfc9bf;margin-top:8px}
+/* calendar */
+.calendar-card{
+background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+border-radius:12px;
+padding:12px;
+border:1px solid rgba(212,175,55,0.06);
+}
+.cal-grid{
+display:grid;
+grid-template-columns: repeat(10, 1fr);
+gap:8px;
+align-items:center;
+}
+.cal-day{
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+padding:8px;
+min-height:54px;
+border-radius:8px;
+background:rgba(255,255,255,0.02);
+color:#e8e6e3;
+font-size:12px;
+cursor:pointer;
+border:1px dashed rgba(255,255,255,0.02);
+}
+.cal-day .date{font-size:11px;opacity:0.9}
+.cal-dot{
+width:12px;height:12px;border-radius:50%;margin-top:6px;
+box-shadow:0 6px 18px rgba(0,0,0,0.45);
+}
+.cal-dot.refused{background:var(--red)}
+.cal-dot.work{background:var(--gold)}
+.cal-dot.passed{background:var(--pass-gray)}
+.cal-dot.none{background:transparent;border:1px solid rgba(255,255,255,0.06)}
 
-  /* responsive larger screens */
-  @media(min-width:760px){
-    .grid{grid-template-columns: 1fr 360px; align-items:start;}
-    .big-card{grid-column:span 2}
-    .card{padding:16px}
-  }
-</style>
+.legend{display:flex;gap:8px;align-items:center;margin-top:10px}
+.legend span{font-size:13px;color:#d6d2c6}
+
+.muted{font-size:12px;color:#cfc9bf;margin-top:8px}
+
+@media(min-width:760px){
+.grid{grid-template-columns: 1fr 380px; align-items:start;}
+.big-card{grid-column:span 2}
+}
+@media(max-width:420px){
+.cal-grid{grid-template-columns: repeat(5, 1fr)}
+.cal-day{min-height:48px;padding:6px}
+.big-value{font-size:30px}
+} </style>
+
 </head>
 <body>
-  <div class="container" role="application" aria-label="Pass percentage tracker">
+  <div class="container" role="application" aria-label="Refusal and Pass tracker">
     <div class="header">
-      <div class="logo">PASS • 60</div>
+      <div><img src="./martini.png" style="height: auto; width: 60px; display: flex; flex-wrap: wrap;"></div>
       <div>
-        <h1>Pass Percentage — Rolling 60 Days</h1>
-        <p class="lead">Track your passed vs worked days for the last 60 days (window includes today and the 59 prior days).</p>
+        <h1>Refusal & Pass Tracker — Rolling 60 Days</h1>
+        <p class="lead">Track shifts you <strong>refused</strong> (denied), <strong>worked</strong>, and <strong>passed</strong> (offered but passed for tracking only). The 60-day window includes today and the prior 59 days.</p>
       </div>
     </div>
 
-    <div class="grid">
-      <div>
-        <!-- Big dashboard -->
-        <div class="big-card" id="dashboard">
-          <div class="big-left">
-            <div class="big-value" id="calendarPercent">—%</div>
-            <div class="sub">Pass % (from calendar last 60 days)</div>
-            <div class="sub" style="margin-top:8px" id="ratioText">— passed / — worked</div>
-          </div>
-          <div class="big-right">
-            <div class="chip" id="currentPassChip">Current pass: —</div>
-            <div style="height:10px"></div>
-            <!-- <div class="muted" id="compareText">Difference: —</div> -->
-          </div>
+```
+<div class="grid">
+  <main>
+    <!-- Big dashboard -->
+    <div class="big-card" id="dashboard">
+      <div class="big-left">
+        <div class="big-value" id="calendarPercent">—%</div>
+        <div class="sub">Refusal % (calculated from calendar — excludes Pass)</div>
+        <div class="sub" id="ratioText">— refused / — worked</div>
+      </div>
+      <div class="big-right">
+        <div class="chip" id="currentRefChip">Current refused %: —</div>
+        <div style="height:10px"></div>
+        <div class="muted" id="windowRangeSmall">Window: — → —</div>
+      </div>
+    </div>
+
+    <div style="height:12px"></div>
+
+    <div class="card" aria-live="polite">
+      <label for="currentRef">Enter current refusal percentage (external/current metric)</label>
+      <div class="row">
+        <div class="col">
+          <input id="currentRef" type="number" min="0" max="100" step="0.1" placeholder="e.g. 22.5" />
         </div>
-
-        <div style="height:12px"></div>
-
-        <!-- Inputs card -->
-        <div class="card" aria-live="polite">
-          <label for="currentPass">Enter current pass percentage (external/current metric)</label>
-          <div class="row">
-            <div class="col">
-              <input id="currentPass" type="number" min="0" max="100" step="0.1" placeholder="e.g. 22.5" />
-            </div>
-            <div style="width:120px">
-              <button id="saveCurrent" class="btn" title="Save current pass percentage">Save</button>
-            </div>
-          </div>
-
-          <hr style="margin:12px 0; border:none; border-top:1px solid rgba(0,0,0,0.06)" />
-
-          <label for="entryDate">Add / Edit a date (this populates the tracker)</label>
-          <div class="row" style="align-items:end">
-            <div class="col">
-              <input type="date" id="entryDate" />
-            </div>
-            <div style="width:140px">
-              <select id="entryType" aria-label="Mark as passed or worked">
-                <option value="worked">Worked</option>
-                <option value="passed">Passed</option>
-              </select>
-            </div>
-            <div style="width:100px">
-              <button id="addEntry" class="btn">Add</button>
-            </div>
-            <div style="width:100px">
-              <button id="clearOutside" class="btn btn-danger" title="Remove entries older than 60 days">Clean old</button>
-            </div>
-          </div>
-
-          <div class="muted" style="margin-top:8px">Tip: Add one date at a time. Dates outside the 60-day window are still stored but not counted.</div>
-
-          <div class="entries" id="entriesList" style="margin-top:12px" aria-label="Recent entries"></div>
-
+        <div style="width:120px">
+          <button id="saveCurrent" class="btn" title="Save current refusal percentage">Save</button>
         </div>
-
-        <div style="height:12px"></div>
-
-        <!-- Stats -->
-        <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <strong>Detailed stats — last 60 days</strong>
-            <small style="color:#7b7b7b">Window: <span id="windowRange"></span></small>
-          </div>
-
-          <div class="stats">
-            <div class="stat">
-              <h3 id="countPassed">0</h3>
-              <p>Days passed (last 60 days)</p>
-            </div>
-            <div class="stat">
-              <h3 id="countWorked">0</h3>
-              <p>Days worked (last 60 days)</p>
-            </div>
-            <div class="stat">
-              <h3 id="daysTotal">0</h3>
-              <p>Total counted days (last 60 days)</p>
-            </div>
-          </div>
-
-          <div class="muted">All data persists locally in your browser. You can edit or remove entries from the list above.</div>
-        </div>
-
       </div>
 
-      <!-- Right column -->
-      <aside>
-        <div class="card" style="margin-bottom:12px">
-          <h3 style="margin:0 0 8px 0">Quick controls</h3>
-          <div style="display:grid;gap:8px">
-            <button id="markTodayPass" class="btn">Mark Today Passed</button>
-            <button id="markTodayWork" class="btn">Mark Today Worked</button>
-            <!-- <button id="clearAll" class="btn btn-danger">Clear all entries</button> -->
-          </div>
-        </div>
+      <hr style="margin:12px 0; border:none; border-top:1px solid rgba(0,0,0,0.06)" />
 
-        <div class="card" style="text-align:center">
-          <div style="font-weight:800;font-size:28px;color:var(--gold)" id="miniPercent">—%</div>
-          <div class="muted">Calendar pass %</div>
-          <div style="height:12px"></div>
-          <div style="font-size:13px;color:#8f8f8f">Colors: <span style="display:inline-block;width:12px;height:12px;background:var(--gold);border-radius:3px;margin:0 6px;vertical-align:middle"></span> Worked <span style="display:inline-block;width:12px;height:12px;background:var(--red);border-radius:3px;margin:0 6px;vertical-align:middle"></span> Passed</div>
+      <label for="entryDate">Add / Edit a date</label>
+      <div class="row" style="align-items:end">
+        <div class="col">
+          <input type="date" id="entryDate" />
         </div>
+        <div style="width:140px">
+          <select id="entryType" aria-label="Mark as worked refused or passed">
+            <option value="worked">Worked (accepted)</option>
+            <option value="refused">Refused (denied shift)</option>
+            <option value="passed">Passed (offered — for tracking only)</option>
+          </select>
+        </div>
+        <div style="width:100px">
+          <button id="addEntry" class="btn">Add</button>
+        </div>
+        <div style="width:100px">
+          <button id="clearOutside" class="btn btn-danger" title="Remove entries older than 60 days">Clean old</button>
+        </div>
+      </div>
 
-      </aside>
+      <div class="muted" style="margin-top:8px">Tip: tap a dot in the calendar to jump that date into the input. Dates outside the 60-day window are stored but not counted in calculations (except passes are still tracked separately).</div>
+
+      <div class="entries" id="entriesList" style="margin-top:12px" aria-label="Recent entries"></div>
     </div>
+
+    <div style="height:12px"></div>
+
+    <div class="card">
+      <strong>60-day calendar</strong>
+      <div class="calendar-card" style="margin-top:10px">
+        <div class="cal-grid" id="calGrid" aria-hidden="false"></div>
+        <div class="legend" aria-hidden="false" style="margin-top:8px">
+          <div style="display:flex;align-items:center;gap:8px"><span class="cal-dot work" style="width:14px;height:14px"></span><span>Worked</span></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-left:12px"><span class="cal-dot refused" style="width:14px;height:14px"></span><span>Refused</span></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-left:12px"><span class="cal-dot passed" style="width:14px;height:14px"></span><span>Passed (tracked only)</span></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-left:12px"><span class="cal-dot none" style="width:14px;height:14px;border-radius:3px"></span><span>No entry</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:12px"></div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <strong>Detailed stats — last 60 days</strong>
+        <small style="color:#7b7b7b" id="windowRange">Window: — → —</small>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <h3 id="countRefused">0</h3>
+          <p>Days refused (last 60 days)</p>
+        </div>
+        <div class="stat">
+          <h3 id="countWorked">0</h3>
+          <p>Days worked (last 60 days)</p>
+        </div>
+        <div class="stat">
+          <h3 id="countPassed">0</h3>
+          <p>Days passed (last 60 days) — tracked only</p>
+        </div>
+        <div class="stat">
+          <h3 id="daysTotal">0</h3>
+          <p>Total counted days (refused + worked)</p>
+        </div>
+      </div>
+
+      <div class="muted">Pass days are displayed but do not affect the refusal percentage calculation. Data persists locally in your browser.</div>
+    </div>
+
+  </main>
+
+  <!-- Right column -->
+  <aside>
+    <div class="card" style="margin-bottom:12px">
+      <h3 style="margin:0 0 8px 0">Quick controls</h3>
+      <div style="display:grid;gap:8px">
+        <button id="markTodayRef" class="btn">Mark Today Refused</button>
+        <button id="markTodayWork" class="btn">Mark Today Worked</button>
+        <button id="markTodayPass" class="btn">Mark Today Passed</button>
+        <!-- <button id="clearAllEntries" class="btn btn-danger">Clear all entries</button> -->
+      </div>
+    </div>
+
+    <div class="card" style="text-align:center">
+      <div style="font-weight:900;font-size:28px;color:var(--red)" id="miniPercent">—%</div>
+      <div class="muted">Calendar refusal %</div>
+      <div style="height:12px"></div>
+      <div style="font-size:13px;color:#8f8f8f">Colors:
+        <span style="display:inline-block;width:12px;height:12px;background:var(--gold);border-radius:3px;margin:0 6px;vertical-align:middle"></span>Worked
+        <span style="display:inline-block;width:12px;height:12px;background:var(--red);border-radius:3px;margin:0 6px;vertical-align:middle"></span>Refused
+        <span style="display:inline-block;width:12px;height:12px;background:var(--pass-gray);border-radius:3px;margin:0 6px;vertical-align:middle"></span>Passed
+      </div>
+    </div>
+
+  </aside>
+</div>
+```
+
   </div>
 
 <script>
-/*
-  PASS PERCENTAGE TRACKER
-  - Rolling 60 day window: includes today and the 59 prior days (total 60 days).
-  - Data stored in localStorage under 'pass60_entries' and 'pass60_current'.
-  - Each entry: { date: 'YYYY-MM-DD', type: 'passed'|'worked', created: timestamp }
+/* REFUSAL & PASS TRACKER
+   Rolling 60-day window: includes today and 59 prior days.
+   localStorage keys:
+     - REF60_ENTRIES_v1  -> array of { date: 'YYYY-MM-DD', type: 'refused'|'worked'|'passed', created: timestamp }
+     - REF60_CURRENT_v1  -> current external refusal percentage (number)
 */
 
-const STORAGE_KEY = 'pass60_entries_v1';
-const CURRENT_KEY = 'pass60_current_v1';
+const STORAGE_KEY = 'REF60_ENTRIES_v1';
+const CURRENT_KEY = 'REF60_CURRENT_v1';
 
 function todayISO(offsetDays = 0){
   const d = new Date();
@@ -331,41 +391,34 @@ function todayISO(offsetDays = 0){
   d.setDate(d.getDate() + offsetDays);
   return d.toISOString().slice(0,10);
 }
-
-// window: last 60 days including today and the 59 prior days
 function windowStartISO(){
   const d = new Date();
   d.setHours(0,0,0,0);
-  d.setDate(d.getDate() - 59); // 59 days back + today = 60 days
+  d.setDate(d.getDate() - 59); // 59 prior days + today = 60
   return d.toISOString().slice(0,10);
 }
 function windowEndISO(){ return todayISO(); }
 
 function loadEntries(){
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch(e){ return [];}
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch(e){ return []; }
 }
-function saveEntries(entries){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+function saveEntries(arr){ localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
+function loadCurrent(){ 
+  const v = localStorage.getItem(CURRENT_KEY);
+  if(v === null || v === '') return null;
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : null;
 }
+function saveCurrent(n){ localStorage.setItem(CURRENT_KEY, String(n)); }
 
-function saveCurrentPct(v){
-  localStorage.setItem(CURRENT_KEY, String(v));
-}
-function loadCurrentPct(){
-  return parseFloat(localStorage.getItem(CURRENT_KEY) || '') || null;
-}
-
-function addOrReplaceEntry(dateISO, type){
+function addOrReplace(dateISO, type){
   if(!dateISO) return;
+  if(!['refused','worked','passed'].includes(type)) return;
   const entries = loadEntries();
-  // avoid duplicates: if existing for same date, replace
   const idx = entries.findIndex(e => e.date === dateISO);
   const entry = { date: dateISO, type: type, created: Date.now() };
   if(idx >= 0) entries[idx] = entry; else entries.push(entry);
-  // sort descending by date
   entries.sort((a,b) => b.date.localeCompare(a.date));
   saveEntries(entries);
   renderAll();
@@ -378,15 +431,16 @@ function removeEntry(dateISO){
   renderAll();
 }
 
-// function clearAllEntries(){
+// function clearAll(){
+//   if(!confirm('Clear all stored entries? This will remove everything.')) return;
 //   localStorage.removeItem(STORAGE_KEY);
+//   localStorage.removeItem(CURRENT_KEY);
 //   renderAll();
 // }
 
 function removeOlderThanWindow(){
   const start = windowStartISO();
   let entries = loadEntries();
-  // keep entries with date >= start
   entries = entries.filter(e => e.date >= start);
   saveEntries(entries);
   renderAll();
@@ -396,188 +450,142 @@ function computeWindowStats(){
   const start = windowStartISO();
   const end = windowEndISO();
   const entries = loadEntries().filter(e => e.date >= start && e.date <= end);
-  let passed = 0, worked = 0;
-  // For days with no entry, they are simply not counted
+  let refused = 0, worked = 0, passed = 0;
   entries.forEach(e => {
-    if(e.type === 'passed') passed++;
+    if(e.type === 'refused') refused++;
     else if(e.type === 'worked') worked++;
+    else if(e.type === 'passed') passed++;
   });
-  const total = passed + worked;
-  const percent = total === 0 ? null : (passed / total * 100);
-  return { passed, worked, total, percent, start, end };
+  const totalCounted = refused + worked; // passed excluded from calculations
+  const percent = totalCounted === 0 ? null : (refused / totalCounted * 100);
+  return { refused, worked, passed, total: totalCounted, percent, start, end };
+}
+
+/* Build calendar UI (60 day grid). Click a day to edit/quick-add */
+function buildCalendar(){
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  const start = new Date(windowStartISO());
+  const entriesMap = {};
+  loadEntries().forEach(e => entriesMap[e.date] = e.type);
+
+  for(let i=0;i<60;i++){
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const iso = d.toISOString().slice(0,10);
+    const node = document.createElement('div');
+    node.className = 'cal-day';
+    node.dataset.date = iso;
+
+    const day = document.createElement('div');
+    day.className = 'date';
+    // show small label: Month/day only for readability
+    const mm = (d.getMonth()+1) + '/' + d.getDate();
+    day.textContent = mm;
+    const dot = document.createElement('div');
+    dot.className = 'cal-dot none';
+    if(entriesMap[iso] === 'refused') { dot.className = 'cal-dot refused'; }
+    else if(entriesMap[iso] === 'worked') { dot.className = 'cal-dot work'; }
+    else if(entriesMap[iso] === 'passed') { dot.className = 'cal-dot passed'; }
+
+    node.appendChild(day);
+    node.appendChild(dot);
+
+    node.onclick = () => {
+      // clicking populates the add/edit form for quick edit
+      document.getElementById('entryDate').value = iso;
+      if(entriesMap[iso]) document.getElementById('entryType').value = entriesMap[iso];
+      else document.getElementById('entryType').value = 'refused';
+      // scroll to top of inputs on small screens
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // hover title (helpful on desktop)
+    node.title = iso + (entriesMap[iso] ? (' — ' + entriesMap[iso]) : ' — no entry');
+
+    grid.appendChild(node);
+  }
+}
+
+function renderEntriesList(){
+  const list = document.getElementById('entriesList');
+  list.innerHTML = '';
+  const entries = loadEntries();
+  if(entries.length === 0){
+    list.innerHTML = '<div style="opacity:0.8;color:#9e9e9e">No entries yet. Add a date above or tap a calendar day.</div>';
+    return;
+  }
+  // show latest first
+  entries.slice(0,200).forEach(e => {
+    const el = document.createElement('div'); el.className = 'entry';
+    const left = document.createElement('div'); left.className='left';
+    const dot = document.createElement('span'); dot.className = 'dot ' + (e.type === 'refused' ? 'refused' : (e.type === 'worked' ? 'work' : 'passed'));
+    const dt = document.createElement('div');
+    const dTitle = document.createElement('div'); dTitle.textContent = e.date; dTitle.style.fontWeight = 700;
+    const dSub = document.createElement('small'); 
+    if(e.type === 'refused') dSub.textContent = 'Refused (denied shift)';
+    else if(e.type === 'worked') dSub.textContent = 'Worked (accepted)';
+    else dSub.textContent = 'Passed (offered — tracked only)';
+    dt.appendChild(dTitle); dt.appendChild(dSub);
+    left.appendChild(dot); left.appendChild(dt);
+
+    const right = document.createElement('div'); right.style.display='flex'; right.style.gap='8px';
+    const editBtn = document.createElement('button'); editBtn.className='btn'; editBtn.style.padding='6px 8px'; editBtn.textContent='Edit';
+    editBtn.onclick = () => {
+      document.getElementById('entryDate').value = e.date;
+      document.getElementById('entryType').value = e.type;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    const delBtn = document.createElement('button'); delBtn.className='btn btn-danger'; delBtn.style.padding='6px 8px'; delBtn.textContent='Delete';
+    delBtn.onclick = () => { if(confirm('Delete entry for ' + e.date + '?')) removeEntry(e.date); };
+    right.appendChild(editBtn); right.appendChild(delBtn);
+
+    el.appendChild(left); el.appendChild(right);
+    list.appendChild(el);
+  });
 }
 
 function renderAll(){
-  // update window range
-  document.getElementById('windowRange').textContent = `${windowStartISO()} → ${windowEndISO()}`;
+  // window labels
+  const start = windowStartISO(), end = windowEndISO();
+  document.getElementById('windowRange').textContent = `${start} → ${end}`;
+  document.getElementById('windowRangeSmall').textContent = `Window: ${start} → ${end}`;
+
+  // build calendar
+  buildCalendar();
 
   // entries list
-  const list = document.getElementById('entriesList');
-  list.innerHTML = '';
-  const entries = loadEntries().slice(0,200); // show most recent 200
-  if(entries.length === 0){
-    list.innerHTML = '<div style="opacity:0.8;color:#9e9e9e">No entries yet. Add a date above.</div>';
-  } else {
-    entries.forEach(e => {
-      const el = document.createElement('div');
-      el.className = 'entry';
-      const left = document.createElement('div');
-      left.className = 'left';
-      const dot = document.createElement('span');
-      dot.className = 'dot ' + (e.type === 'passed' ? 'pass' : 'work');
-      const dt = document.createElement('div');
-      const dTitle = document.createElement('div');
-      dTitle.textContent = e.date;
-      dTitle.style.fontWeight = 700;
-      const dSub = document.createElement('small');
-      dSub.textContent = e.type === 'passed' ? 'Passed (denied shift)' : 'Worked (accepted)';
-      dt.appendChild(dTitle);
-      dt.appendChild(dSub);
-      left.appendChild(dot);
-      left.appendChild(dt);
-
-      const right = document.createElement('div');
-      right.style.display='flex';
-      right.style.gap='8px';
-      right.style.alignItems='center';
-
-      // edit buttons
-      const editBtn = document.createElement('button');
-      editBtn.className = 'btn';
-      editBtn.style.padding='6px 8px';
-      editBtn.textContent = 'Edit';
-      editBtn.onclick = () => {
-        document.getElementById('entryDate').value = e.date;
-        document.getElementById('entryType').value = e.type === 'passed' ? 'passed' : 'worked';
-        // scroll to top input on small screens
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      };
-
-      const delBtn = document.createElement('button');
-      delBtn.className = 'btn btn-danger';
-      delBtn.style.padding='6px 8px';
-      delBtn.textContent = 'Delete';
-      delBtn.onclick = () => {
-        if(confirm('Delete entry for ' + e.date + '?')) removeEntry(e.date);
-      };
-
-      right.appendChild(editBtn);
-      right.appendChild(delBtn);
-
-      el.appendChild(left);
-      el.appendChild(right);
-      list.appendChild(el);
-    });
-  }
+  renderEntriesList();
 
   // stats
   const s = computeWindowStats();
-  document.getElementById('countPassed').textContent = s.passed;
+  document.getElementById('countRefused').textContent = s.refused;
   document.getElementById('countWorked').textContent = s.worked;
+  document.getElementById('countPassed').textContent = s.passed;
   document.getElementById('daysTotal').textContent = s.total;
 
-  // big dashboard
+  // big percent displays
   const pctEl = document.getElementById('calendarPercent');
   const miniPct = document.getElementById('miniPercent');
   if(s.percent === null){
     pctEl.textContent = '—%';
     miniPct.textContent = '—%';
-    document.getElementById('ratioText').textContent = `— passed / — worked`;
+    document.getElementById('ratioText').textContent = `— refused / — worked`;
   } else {
     const formatted = s.percent.toFixed(1) + '%';
     pctEl.textContent = formatted;
     miniPct.textContent = formatted;
-    document.getElementById('ratioText').textContent = `${s.passed} passed / ${s.worked} worked`;
+    document.getElementById('ratioText').textContent = `${s.refused} refused / ${s.worked} worked`;
   }
 
-  // current pass metric
-  const current = loadCurrentPct();
-  const chip = document.getElementById('currentPassChip');
-  if(current === null){
-    chip.textContent = 'Current pass %: —';
-  } else {
-    chip.textContent = 'Current pass %: ' + Number(current).toFixed(1) + '%';
-  }
-
-  // compare difference
-  // const comp = document.getElementById('compareText');
-  // if(current === null || s.percent === null){
-  //   comp.textContent = 'Difference: —';
-  // } else {
-  //   const diff = Number(current) - s.percent;
-  //   const sign = diff > 0 ? '+' : (diff < 0 ? '' : '');
-  //   comp.textContent = `Difference: ${sign}${diff.toFixed(1)} percentage points (current − calendar)`;
-  // }
-
-  // big card color hint via small UI
-  const deltaEl = document.getElementById('dashboard');
-  // subtle border change when pass% high
-  if(s.percent !== null){
-    if(s.percent >= 50) {
-      deltaEl.style.border = '1px solid rgba(214,31,31,0.12)';
-    } else {
-      deltaEl.style.border = '1px solid rgba(212,175,55,0.08)';
-    }
-  }
+  // current external metric
+  const cur = loadCurrent();
+  const chip = document.getElementById('currentRefChip');
+  if(cur === null) chip.textContent = 'Current refused %: —';
+  else chip.textContent = 'Current refused %: ' + Number(cur).toFixed(1) + '%';
 }
 
-function init(){
-  // set default date input to today
-  const dInput = document.getElementById('entryDate');
-  dInput.value = todayISO();
-
-  // load current into input
-  const cur = loadCurrentPct();
-  if(cur !== null) document.getElementById('currentPass').value = Number(cur).toFixed(1);
-
-  // event handlers
-  document.getElementById('saveCurrent').addEventListener('click', () => {
-    const v = parseFloat(document.getElementById('currentPass').value);
-    if(Number.isFinite(v) && v >= 0 && v <= 100){
-      saveCurrentPct(v);
-      renderAll();
-      flash('Saved current pass %');
-    } else {
-      alert('Please enter a number between 0 and 100 for the current pass percentage.');
-    }
-  });
-
-  document.getElementById('addEntry').addEventListener('click', () => {
-    const date = document.getElementById('entryDate').value;
-    const type = document.getElementById('entryType').value;
-    if(!date){
-      alert('Please choose a date.');
-      return;
-    }
-    if(!['passed','worked'].includes(type)){
-      alert('Select passed or worked.');
-      return;
-    }
-    addOrReplaceEntry(date, type);
-    flash('Saved entry for ' + date);
-  });
-
-  document.getElementById('markTodayPass').addEventListener('click', () => {
-    addOrReplaceEntry(todayISO(), 'passed');
-  });
-  document.getElementById('markTodayWork').addEventListener('click', () => {
-    addOrReplaceEntry(todayISO(), 'worked');
-  });
-
-  // document.getElementById('clearAll').addEventListener('click', () => {
-  //   if(confirm('Clear all stored entries? This cannot be undone.')) {
-  //     clearAllEntries();
-  //   }
-  // });
-
-  document.getElementById('clearOutside').addEventListener('click', () => {
-    if(confirm('Remove entries older than the current 60-day window?')) removeOlderThanWindow();
-  });
-
-  renderAll();
-}
-
-// small ephemeral flash
+/* Small UX helpers */
 function flash(msg){
   const el = document.createElement('div');
   el.textContent = msg;
@@ -596,17 +604,61 @@ function flash(msg){
   setTimeout(()=> el.remove(),2000);
 }
 
-// Initialize app
-init();
+/* Init and event wiring */
+function init(){
+  // set date input default to today
+  document.getElementById('entryDate').value = todayISO();
 
-/* Accessibility: support keyboard add via Enter on date/type
-   and keep things usable on mobile (touch) */
-document.getElementById('entryDate').addEventListener('keydown', (e) => {
-  if(e.key === 'Enter') document.getElementById('addEntry').click();
-});
-document.getElementById('entryType').addEventListener('keydown', (e) => {
-  if(e.key === 'Enter') document.getElementById('addEntry').click();
-});
+  // load current
+  const cur = loadCurrent();
+  if(cur !== null) document.getElementById('currentRef').value = Number(cur).toFixed(1);
+
+  document.getElementById('saveCurrent').addEventListener('click', () => {
+    const v = parseFloat(document.getElementById('currentRef').value);
+    if(Number.isFinite(v) && v >= 0 && v <= 100){
+      saveCurrent(v);
+      renderAll();
+      flash('Saved current refusal %');
+    } else alert('Enter a number between 0 and 100 for the current refusal percentage.');
+  });
+
+  document.getElementById('addEntry').addEventListener('click', () => {
+    const date = document.getElementById('entryDate').value;
+    const type = document.getElementById('entryType').value;
+    if(!date){ alert('Please choose a date.'); return; }
+    if(!['refused','worked','passed'].includes(type)){ alert('Select refused, worked, or passed.'); return; }
+    addOrReplace(date, type);
+    flash('Saved entry for ' + date);
+  });
+
+  document.getElementById('markTodayRef').addEventListener('click', () => addOrReplace(todayISO(), 'refused'));
+  document.getElementById('markTodayWork').addEventListener('click', () => addOrReplace(todayISO(), 'worked'));
+  document.getElementById('markTodayPass').addEventListener('click', () => addOrReplace(todayISO(), 'passed'));
+
+  document.getElementById('clearOutside').addEventListener('click', () => {
+    if(confirm('Remove entries older than the current 60-day window?')) removeOlderThanWindowImpl();
+  });
+
+  // document.getElementById('clearAllEntries').addEventListener('click', () => clearAll());
+
+  // keyboard-friendly
+  document.getElementById('entryDate').addEventListener('keydown',(e)=>{ if(e.key==='Enter') document.getElementById('addEntry').click(); });
+  document.getElementById('entryType').addEventListener('keydown',(e)=>{ if(e.key==='Enter') document.getElementById('addEntry').click(); });
+
+  renderAll();
+}
+
+/* quick remove older than window helper used above */
+function removeOlderThanWindowImpl(){
+  const start = windowStartISO();
+  let entries = loadEntries();
+  entries = entries.filter(e => e.date >= start);
+  saveEntries(entries);
+  renderAll();
+}
+
+init();
 </script>
+
 </body>
 </html>
