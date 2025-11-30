@@ -415,7 +415,10 @@ function todayISO(offsetDays = 0){
 function windowStartISO(){
   const d = new Date();
   // Removed d.setHours(0,0,0,0) fix
-  d.setDate(d.getDate() - 59); // 59 prior days + today = 60 days total
+  d.setDate(d.getDate() - 58); 
+  const today = new Date();
+  
+  today.setDate(today.getDate() + 1);
   return toLocalISO(d);
 }
 
@@ -485,21 +488,45 @@ function removeOlderThanWindow(){
 }
 
 function computeWindowStats(){
-  const start = windowStartISO();
-  const end = windowEndISO();
+  // 'visualStart' will be the date displayed in the dashboard, e.g., '2025-10-01'
+  const visualStart = windowStartISO(); 
+  const end = windowEndISO(); // e.g., '2025-11-29'
   
-  // FIX: Comparison logic is inclusive (>= start and <= end)
-  const entries = loadEntries().filter(e => e.date >= start && e.date <= end);
+  // *** FIX FOR BOUNDARY EXCLUSION ***
+  // 1. Create a Date object from the visual start date.
+  const filterDate = new Date(visualStart);
   
+  // 2. Subtract 1 day. If visualStart is 10/01, filterStart will be 09/30.
+  filterDate.setDate(filterDate.getDate() - 1);
+  
+  // 3. Convert the new date back to a padded ISO string: '2025-09-30'
+  const filterStart = toLocalISO(filterDate); 
+  
+  // Now filter the entries:
+  // We use e.date > filterStart (e.g., > '2025-09-30') to ensure 
+  // '2025-10-01' is unambiguously included in the result set.
+  const entries = loadEntries().filter(e => e.date > filterStart && e.date <= end);
+  
+  // Standard calculation logic
   let refused = 0, worked = 0, passed = 0;
   entries.forEach(e => {
     if(e.type === 'refused') refused++;
     else if(e.type === 'worked') worked++;
     else if(e.type === 'passed') passed++;
   });
+  
   const totalCounted = refused + worked; // passed excluded from calculations
-  const percent = totalCounted === 0 ? null : (refused / totalCounted * 100);
-  return { refused, worked, passed, total: totalCounted, percent, start, end };
+  
+  // Return the visualStart date for display, but the corrected counts
+  return { 
+    refused, 
+    worked, 
+    passed, 
+    total: totalCounted, 
+    percent: totalCounted === 0 ? null : (refused / totalCounted * 100), 
+    start: visualStart, 
+    end 
+  };
 }
 
 /* Build calendar UI (60 day grid). Click a day to edit/quick-add */
