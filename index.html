@@ -385,16 +385,13 @@ box-shadow:0 6px 18px rgba(0,0,0,0.45);
 <script>
 /* REFUSAL & PASS TRACKER
    Rolling 60-day window: includes today and 59 prior days.
-   localStorage keys:
-     - REF60_ENTRIES_v1  -> array of { date: 'YYYY-MM-DD', type: 'refused'|'worked'|'passed', created: timestamp, notes: optional string }
-     - REF60_CURRENT_v1  -> current external refusal percentage (number)
 */
 
 const STORAGE_KEY = 'REF60_ENTRIES_v1';
 const CURRENT_KEY = 'REF60_CURRENT_v1';
 
 // ******************************************************
-// FIX: Date functions updated to avoid time zone conflicts
+// CORE DATE FUNCTIONS (FIXED for Timezone/Boundary Issues)
 // ******************************************************
 
 function toLocalISO(d) {
@@ -407,24 +404,25 @@ function toLocalISO(d) {
 
 function todayISO(offsetDays = 0){
   const d = new Date();
-  // Removed d.setHours(0,0,0,0) fix
   d.setDate(d.getDate() + offsetDays);
   return toLocalISO(d);
 }
 
+// *** FIX 1: windowStartISO - Returns '2025-10-02' reliably ***
 function windowStartISO(){
   const d = new Date();
-  // Removed d.setHours(0,0,0,0) fix
-  d.setDate(d.getDate() - 58); 
-  const today = new Date();
   
-  today.setDate(today.getDate() + 1);
-  return toLocalISO(d);
+  // 1. Subtract 60 days. 
+  d.setDate(d.getDate() - 60); 
+  
+  // 2. Add 1 day. Compensates for the time zone slip, forcing the date to 10/02.
+  d.setDate(d.getDate() + 1); 
+  
+  return toLocalISO(d); // Returns '2025-10-02'
 }
 
 function windowEndISO(){ 
   const d = new Date();
-  // Removed d.setHours(0,0,0,0) fix
   return toLocalISO(d);
 }
 
@@ -480,31 +478,22 @@ function removeEntry(dateISO){
 }
 
 function removeOlderThanWindow(){
-  const start = windowStartISO();
-  let entries = loadEntries();
-  entries = entries.filter(e => e.date >= start);
-  saveEntries(entries);
-  renderAll();
+  removeOlderThanWindowImpl();
 }
 
+// *** FIX 2: computeWindowStats - Uses 1-day-prior filter to ensure inclusive counting (10/02 included, 10/01 excluded) ***
 function computeWindowStats(){
-  // 'visualStart' will be the date displayed in the dashboard, e.g., '2025-10-01'
+  // 'visualStart' is the date displayed (e.g., '2025-10-02')
   const visualStart = windowStartISO(); 
-  const end = windowEndISO(); // e.g., '2025-11-29'
+  const end = windowEndISO(); 
   
-  // *** FIX FOR BOUNDARY EXCLUSION ***
-  // 1. Create a Date object from the visual start date.
-  const filterDate = new Date(visualStart);
+  // Create a filter boundary one day *before* the visual start.
+  const filterDate = new Date(visualStart + 'T00:00:00'); // Ensure date is parsed at midnight UTC
+  filterDate.setDate(filterDate.getDate() - 1); 
+  const filterStart = toLocalISO(filterDate); // e.g., '2025-10-01'
   
-  // 2. Subtract 1 day. If visualStart is 10/01, filterStart will be 09/30.
-  filterDate.setDate(filterDate.getDate() - 1);
-  
-  // 3. Convert the new date back to a padded ISO string: '2025-09-30'
-  const filterStart = toLocalISO(filterDate); 
-  
-  // Now filter the entries:
-  // We use e.date > filterStart (e.g., > '2025-09-30') to ensure 
-  // '2025-10-01' is unambiguously included in the result set.
+  // Filter: Use e.date > filterStart (e.g., > '2025-10-01') to ensure 
+  // '2025-10-02' is unambiguously included in the result set.
   const entries = loadEntries().filter(e => e.date > filterStart && e.date <= end);
   
   // Standard calculation logic
@@ -515,7 +504,7 @@ function computeWindowStats(){
     else if(e.type === 'passed') passed++;
   });
   
-  const totalCounted = refused + worked; // passed excluded from calculations
+  const totalCounted = refused + worked; 
   
   // Return the visualStart date for display, but the corrected counts
   return { 
@@ -530,20 +519,26 @@ function computeWindowStats(){
 }
 
 /* Build calendar UI (60 day grid). Click a day to edit/quick-add */
+// *** FIX 3: buildCalendar - Uses the ISO string directly to construct the exact 10/02 start date ***
 function buildCalendar(){
   const grid = document.getElementById('calGrid');
   grid.innerHTML = '';
-  const start = new Date(windowStartISO());
+  
+  // Use the ISO string + 'T00:00:00' to create a date object for the loop 
+  // that unambiguously starts on the correct day (10/02) at the local midnight.
+  const visualStartISO = windowStartISO();
+  const start = new Date(visualStartISO + 'T00:00:00'); 
+  
   const entriesMap = {};
-  loadEntries().forEach(e => entriesMap[e.date] = e); // Store full entry object now
+  loadEntries().forEach(e => entriesMap[e.date] = e); 
 
-  const todayIso = todayISO(); // Fixed today date
+  const todayIso = todayISO(); 
 
+  // The loop runs exactly 60 times (i=0 to i=59)
   for(let i=0;i<60;i++){
     const d = new Date(start);
-    d.setDate(start.getDate() + i);
+    d.setDate(start.getDate() + i); 
     
-    // FIX: Use toLocalISO to prevent UTC shift error for display and comparison
     const iso = toLocalISO(d); 
     
     const node = document.createElement('div');
@@ -793,13 +788,23 @@ function init(){
   renderAll();
 }
 
-/* quick remove older than window helper used above */
+// *** FIX 4: removeOlderThanWindowImpl - Uses 1-day-prior filter to ensure inclusive cleaning (10/02 kept, 10/01 deleted) ***
 function removeOlderThanWindowImpl(){
-  const start = windowStartISO();
+  const visualStart = windowStartISO(); // The date we want to KEEP (e.g., 10/02)
+  
+  // Create a filter boundary one day *before* the visual start date.
+  const filterDate = new Date(visualStart + 'T00:00:00'); 
+  filterDate.setDate(filterDate.getDate() - 1); 
+  const filterStart = toLocalISO(filterDate); // This becomes the day *before* the window
+  
   let entries = loadEntries();
-  entries = entries.filter(e => e.date >= start);
+  
+  // Filter: Keep entries where date is GREATER THAN the day before the window starts (e.g., > 10/01).
+  entries = entries.filter(e => e.date > filterStart);
+  
   saveEntries(entries);
   renderAll();
+  flash('Cleaned entries older than ' + visualStart);
 }
 
 init();
